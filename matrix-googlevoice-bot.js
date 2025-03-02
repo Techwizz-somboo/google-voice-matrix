@@ -1,4 +1,4 @@
-const config = require('./config.js')
+const config = require('./config.js');
 const botNotifyRoom = `${config.matrixBotId.split(':')[0]}-Notify2`
 const [Black, Red, Green, Yellow, Blue, Magenta, Cyan, White] = ["\x1b[30m", "\x1b[31m", "\x1b[32m", "\x1b[33m", "\x1b[34m", "\x1b[35m", "\x1b[36m", "\x1b[37m"]
 const JP = (text) => JSON.stringify(text, null, 2) // JSON prettify
@@ -23,6 +23,89 @@ const gVoiceReply = async (room, text) => {
       };
       Log(`GMAIL (OUT): "${text}" to ${data.to.split('.')[0]}`, Magenta);
       require('gmail-send')(data)(() => { });
+   }
+}
+
+//! Upload & share media to Nextcloud
+
+const nextcloudUpload = async (fileName, mediaData) => {
+   try {
+      const nextcloudUrl = config.nextcloudInstance;
+      const uploadsDir = config.nextcloudFolder;
+      const username = config.nextcloudUsername;
+      const password = config.nextcloudPassword;
+      const credentials = Buffer.from(`${username}:${password}`).toString('base64');
+
+      const unixTime = Math.floor(Date.now() / 1000);
+      const fileNameUpload = `${unixTime}_${fileName}`
+
+      const propfind = await fetch(`${nextcloudUrl}/remote.php/dav/files/${username}/${uploadsDir}`, {
+         method: 'PROPFIND',
+         headers: {
+             'Authorization': `Basic ${credentials}`,
+             'Depth': '1'
+         }
+      });
+
+      if (!propfind.ok) {
+         // Create the folder
+         const createFolder = await fetch(`${nextcloudUrl}/remote.php/dav/files/${username}/${uploadsDir}`, {
+            method: 'MKCOL',
+            headers: {
+                'Authorization': `Basic ${credentials}`
+            }
+         });
+
+         if (!createFolder.ok) {
+            Log(`Nextcloud: Failed to create folder ${uploadsDir}.`, Red);
+            throw new Error(`Error: ${createFolder.status} ${createFolder.statusText}`);
+         }
+      }
+
+      // Upload the file
+      const uploadFile = await fetch(`${nextcloudUrl}/remote.php/dav/files/${username}/${uploadsDir}/${fileNameUpload}`, {
+         method: 'PUT',
+         headers: {
+            'Authorization': `Basic ${credentials}`
+         },
+         body: mediaData
+      });
+
+      if (!uploadFile.ok) {
+         Log(`Nextcloud: Failed to upload file ${fileName}.`, Red);
+         throw new Error(`Error: ${uploadFile.status} ${uploadFile.statusText}`);
+      }
+
+      // Share the file
+      const shareBody = new URLSearchParams({
+         path: `/${uploadsDir}/${fileNameUpload}`,
+         shareType: '3', // Public link
+         permissions: '1' // Read-only
+      });
+
+      const shareFile = await fetch(`${nextcloudUrl}/ocs/v1.php/apps/files_sharing/api/v1/shares`, {
+         method: 'POST',
+         headers: {
+            'Authorization': `Basic ${credentials}`,
+            'Accept': 'application/json',
+            'OCS-APIRequest': 'true',
+            'Content-Type': 'application/x-www-form-urlencoded'
+         },
+         body: shareBody
+      });
+
+      if (!shareFile.ok) {
+         Log(`Nextcloud: Failed to share ${fileNameUpload}.`, Red);
+         throw new Error(`Error: ${shareFile.status} ${shareFile.statusText}`);
+      }
+
+      // Parse for the share link.
+      const shareText = await shareFile.text();
+      const shareJson = JSON.parse(shareText);
+      
+      return shareJson.ocs.data.url;
+   } catch (error) {
+      Log(`Nextcloud upload error: ${error}`, Red);
    }
 }
 
@@ -111,7 +194,9 @@ const startNewMatrixClient = () => {
 
       let sender = event.sender;
       let body = event.content.body;
-      if (sender != config.matrixBotId && event.type == 'm.room.message') {
+      let contentType = event.content.msgtype;
+
+      if (sender != config.matrixBotId && event.type == 'm.room.message' && contentType == 'm.text') {
          Log(`MATRIX (IN): ${JP(event)}`, Blue);
          if (body.startsWith('!')) {
             let [cmd, arg = ''] = body.split(/ (.*)/g)
@@ -161,6 +246,30 @@ const startNewMatrixClient = () => {
             }
          } else if (await matrixClient.getPublishedAlias(room) != `#${botNotifyRoom}:${config.matrixDomain}`) {
             gVoiceReply(room, body)
+         }
+      }
+      else if (config.nextcloudEnabled && sender != config.matrixBotId && event.type == 'm.room.message' && (contentType == 'm.image' || contentType == 'm.file')) {
+         try {
+            Log(`MATRIX (IN): Downloading media ${event.content.filename}. Event ${JP(event)}`, Blue);
+            let mediaDownloaded = await matrixClient.downloadContent(event.content.url);
+            Log(`MATRIX (IN): Uploading media ${event.content.filename} to Nextcloud.`, Blue);
+            let fileUrl = await nextcloudUpload(event.content.filename, mediaDownloaded.data);
+            let messageToSend = `${config.nextcloudTextToSend} ${fileUrl}`;
+            if (messageToSend.includes("Nextcloud upload error")) {
+               await matrixClient.sendMessage(room, {
+                  "msgtype": "m.notice",
+                  "body": `${messageToSend}`,
+               });
+            }
+            else {
+               gVoiceReply(room, messageToSend);
+            }
+         } catch (error) {
+            Log(`Error downloading or uploading media to Nextcloud. ${JP(error)}`, Red);
+            await matrixClient.sendMessage(room, {
+               "msgtype": "m.notice",
+               "body": `Error downloading or uploading media to Nextcloud. Please check server logs.`,
+            });
          }
       }
 

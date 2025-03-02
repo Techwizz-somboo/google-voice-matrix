@@ -17,6 +17,14 @@ module.exports = {
    backDays: 0, // Days back to search for messages in Gmail. Mark messages as Unread if you want the bot to see them.
    logging: true, // Log to console?
 
+   // Nextcloud Integration, Required if you want to be able to send images, or other media out of the bridge
+   nextcloudEnabled: false, // Turn to true if you want Nextcloud integration.
+   nextcloudInstance: 'https://my.nextcloud.com', // Change to your Nextcloud instance.
+   nextcloudUsername: 'user', // Set this to your Nextcloud username.
+   nextcloudPassword: 'pass', // Set this to your Nextcloud password or app password.
+   nextcloudFolder: 'matrix-google-voice', // This is the folder media will be uploaded to.
+   nextcloudTextToSend: 'I shared a file with you.', // This is the text that'll send with the link to your file.
+
    // Following are tweaks for the IMAP client; see https://github.com/mscdex/node-imap
    imapKeepalive: {
       interval: 60 * 1000, // interval (in ms) at which NOOPs are sent and the interval at which idleInterval is checked. Default 10000
