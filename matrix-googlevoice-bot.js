@@ -96,8 +96,19 @@ const startNewMatrixClient = () => {
 
    matrixClient.start().then(() => { matrixNotify("MATRIX: connected.", Green, '🟢'); });
 
+   const ONE_HOUR_MS = 60 * 60 * 1000;
+
    matrixClient.on("room.message", async (room, event) => {
       if (!event.content) return;
+
+      const currentTime = Date.now();
+      const eventTime = event.origin_server_ts;
+
+      if (currentTime - eventTime > ONE_HOUR_MS)  {
+         Log(`Warning: Message older than 1 hour, ignoring: ${event.content.body}`, Yellow);
+         return;
+      }
+
       let sender = event.sender;
       let body = event.content.body;
       if (sender != config.matrixBotId && event.type == 'm.room.message') {
