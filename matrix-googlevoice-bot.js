@@ -250,10 +250,13 @@ const startNewMatrixClient = () => {
       }
       else if (config.nextcloudEnabled && sender != config.matrixBotId && event.type == 'm.room.message' && (contentType == 'm.image' || contentType == 'm.file' || contentType == 'm.audio' || contentType == 'm.video')) {
          try {
-            Log(`MATRIX (IN): Downloading media ${event.content.filename}. Event ${JP(event)}`, Blue);
+            let fileName = event.content.filename;
+            if (fileName == null) { fileName = event.content.body; }
+
+            Log(`MATRIX (IN): Downloading media ${fileName}. Event ${JP(event)}`, Blue);
             let mediaDownloaded = await matrixClient.downloadContent(event.content.url);
-            Log(`MATRIX (IN): Uploading media ${event.content.filename} to Nextcloud.`, Blue);
-            let fileUrl = await nextcloudUpload(event.content.filename, mediaDownloaded.data);
+            Log(`MATRIX (IN): Uploading media ${fileName} to Nextcloud.`, Blue);
+            let fileUrl = await nextcloudUpload(fileName, mediaDownloaded.data);
             let messageToSend = `${config.nextcloudTextToSend} ${fileUrl}`;
             if (messageToSend.includes("Nextcloud upload error")) {
                await matrixClient.sendMessage(room, {
