@@ -13,11 +13,11 @@ _**PLEASE NOTE** this is a draft adapted from my own use, so I may have left out
 
 *   Text messages, incoming & outgoing (replies)
 *   Incoming media (images, etc.)
+*   Outgoing media (through our Nextcloud Integration, although not possible to send as an MMS)
 
 ### Not supported:
 
 *   Group chats (probably never, because Google)
-*   Outgoing media (apparently impossible via Gmail → Google Voice, because Google)
 *   Backfilling history
 
 ### Planned:
@@ -60,7 +60,6 @@ Some other things the bot can do:
 
 *   Automatically search Google Contacts API for avatars
 *   Add options for logging
-*   Figure out sending media capability ... anyone know how? No method I've tried allows replying with image from Gmail.
 
 ## Changelog
 
