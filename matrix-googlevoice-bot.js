@@ -248,7 +248,7 @@ const startNewMatrixClient = () => {
             gVoiceReply(room, body)
          }
       }
-      else if (config.nextcloudEnabled && sender != config.matrixBotId && event.type == 'm.room.message' && (contentType == 'm.image' || contentType == 'm.file')) {
+      else if (config.nextcloudEnabled && sender != config.matrixBotId && event.type == 'm.room.message' && (contentType == 'm.image' || contentType == 'm.file' || contentType == 'm.audio' || contentType == 'm.video')) {
          try {
             Log(`MATRIX (IN): Downloading media ${event.content.filename}. Event ${JP(event)}`, Blue);
             let mediaDownloaded = await matrixClient.downloadContent(event.content.url);
