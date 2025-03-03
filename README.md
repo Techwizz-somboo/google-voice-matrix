@@ -1,10 +1,10 @@
-# Matrix Google Voice Bridge Bot
+# Google Voice & Matrix Bridge Bot
 
-Since Google Voice has no API, and probably never will, this is a method for "pseudo-bridging" your Matrix server with Google Voice.
+Google-Voice-Matrix is an open-source and self-hostable bridge bot to integrate between [Google Voice](https://voice.google.com/about) and [Matrix](https://matrix.org/).
 
-_**PLEASE NOTE** this is a draft adapted from my own use, so I may have left out something I did_ [_all along the way_](https://www.youtube.com/watch?v=IkA9b5UWr9g)_. Please ping me with an issue if I missed anything._
+Google Voice offers no API, so the way this bridge bot works is a little unique. It makes use of Google's email forwarding feature to give a reliable way to integrate with Google Voice. This, however, does come with caveats. For example, Google doesn't allow sending MMS messages through the email integration. I, however, have worked around this by offering a Nextcloud integration. When you attempt to send media through Matrix, the bridge will automatically upload the media to any Nextcloud instance of your choice and instead send the recipient a link to the media. This comes with some benefits, one being that there's no compression, meaning images will be sent at full quality. It also means you can easily send files, videos, audio and music in addition to images, which Google Voice doesn't even natively support. Another caveat of using the email forwarding feature as a bridge is that it's impossible to get messages you send directly through Google Voice, meaning if you send a message directly through Google Voice, either through the mobile app or web interface, the message will not appear in Matrix.
 
-### How it works
+### Tldr; How this works
 
 *   Use Google Voice’s **Forward messages to email** option and watch inbox for new messages, then create new rooms for each sender
 *   Watch these rooms for replies and route back through Gmail to Google Voice.
@@ -17,8 +17,7 @@ _**PLEASE NOTE** this is a draft adapted from my own use, so I may have left out
 
 ### Not supported:
 
-*   Group chats (probably never, because Google)
-*   Backfilling history
+*   Group chats (Google doesn't forward group chat messages to email)
 
 ### Planned:
 
@@ -60,20 +59,11 @@ Some other things the bot can do:
 
 *   Automatically search Google Contacts API for avatars
 *   Add options for logging
+*   A command to change the message to send with the Nextcloud link when sending media
+*   Offer an easy way to rejoin rooms
 
-## Changelog
+## Credits
 
-#### 2022-04-19
-* Fixed mail client multiple connection [issue](https://github.com/dzg/matrix-googlevoice/issues/1)
-#### 2022-03-17
-* Added `!restart` to restart connections
-#### 2022-03-15
-* `!avatar` now changes both the room avatar and the bot's avatar in the room
-* Added `keepalive` for `Imap`; hopefully less disconnects
-#### 2022-03-14
-* Added `package.json` for `npm install` support
-* Better comments in `config.example.js`
-* Added `backdays` option to grab older emails
+Maintainer: [Paul Black @Techwizz-somboo](https://github.com/Techwizz-somboo). Paul added the Nextcloud integration, bug fixes, and plans to integrate the Google Contacts API, along with other features. You can support him and his work on [Liberapay](https://liberapay.com/Techwizz/).
 
-
-revised 4/19
+This bridge originates from [matrix-googlevoice](https://github.com/dzg/matrix-googlevoice) created by [Ze’ev @dzg](https://github.com/dzg). If you'd like to support them, here's their [Ko-fi](https://ko-fi.com/dzeevg).
