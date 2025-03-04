@@ -284,6 +284,10 @@ const startNewMatrixClient = () => {
 
                mediaData = await assetDownloaded.arrayBuffer();
             }
+
+            if (mediaData == null) {
+               throw new Error('mediaData is null.');
+            }
             
             Log(`MATRIX (IN): Uploading media ${fileName} to Nextcloud.`, Blue);
             let fileUrl = await nextcloudUpload(fileName, mediaData);
