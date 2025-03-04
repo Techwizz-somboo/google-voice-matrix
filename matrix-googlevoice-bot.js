@@ -253,10 +253,40 @@ const startNewMatrixClient = () => {
             let fileName = event.content.filename;
             if (fileName == null) { fileName = event.content.body; }
 
+            let mediaData = null;
+
             Log(`MATRIX (IN): Downloading media ${fileName}. Event ${JP(event)}`, Blue);
-            let mediaDownloaded = await matrixClient.downloadContent(event.content.url);
+
+            // Attempt to use the downloadContent function, if download fails try the new authenticated endpoint.
+            try {
+               let mediaDownloaded = await matrixClient.downloadContent(event.content.url);
+               mediaData = mediaDownloaded.data;
+            } catch {
+               // Parse the mxc url
+               const [, rest] = event.content.url.split('mxc://');
+               const parts = rest.split('/');
+
+               const serverName = parts[0];
+               const assetId = parts[parts.length - 1];
+
+               // Fetch the asset
+               const assetDownloaded = await fetch(`${config.matrixServerUrl}/_matrix/client/v1/media/download/${serverName}/${assetId}`, {
+                  method: 'GET',
+                  headers: {
+                      'Authorization': `Bearer ${config.matrixBotAccessToken}`
+                  }
+               });
+
+               if (!assetDownloaded.ok) {
+                  Log(`Failed to fetch asset ${fileName}.`, Red);
+                  throw new Error('Network response was not ok ' + assetDownloaded.statusText);
+               }
+
+               mediaData = await assetDownloaded.arrayBuffer();
+            }
+            
             Log(`MATRIX (IN): Uploading media ${fileName} to Nextcloud.`, Blue);
-            let fileUrl = await nextcloudUpload(fileName, mediaDownloaded.data);
+            let fileUrl = await nextcloudUpload(fileName, mediaData);
             let messageToSend = `${config.nextcloudTextToSend} ${fileUrl}`;
             if (messageToSend.includes("Nextcloud upload error")) {
                await matrixClient.sendMessage(room, {
