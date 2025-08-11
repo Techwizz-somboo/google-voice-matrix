@@ -309,6 +309,17 @@ const startNewMatrixClient = () => {
             });
          }
       }
+      else if (sender != config.matrixBotId && event.type == 'm.room.message' && contentType == 'm.location' && body.match(/geo:([\d.-]+),([\d.-]+)/)) {
+         const geoPart = body.match(/geo:([\d.-]+),([\d.-]+)/);
+
+         const latitude = parseFloat(geoPart[1]);
+         const longitude = parseFloat(geoPart[2]);
+
+         const osmUrl = `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=9/${latitude}/${longitude}`;
+
+         const messageToSend = `I shared a location pin with you: ${osmUrl}`;
+         gVoiceReply(room, messageToSend);
+      }
 
    });
 }
